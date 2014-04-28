@@ -1,31 +1,31 @@
 program = block <EOF>
 
 block = [ ident "is" type {"," ident "is" type} "."]
-        { "dec" ident param_list "->" block "." } statement
+        { "dec" ident dec_param_list ":" type "->" block "." } statement
 
-statement = [ ident "<-" expression | 
-	    ident ":" param_list |
-            "if" condition "," statement [";" "else if" condition "," statement] [";" "else" statement] "." |
-	    "foreach" ident "in" ident statement {"." statement} | 
+statement = [ ident "<-" expression |
+	    ident call_param_list |
+            "if" condition "," statement ["else if" condition "," statement] ["else" statement] |
+	    "foreach" ident "in" ident statement {"." statement} |
             "repeat" statement {"." statement} "until" condition |
 	    "return" expression |
 	    "incr" ident |
 	    "decr" ident |
 	    ident "'" ident |
-	    comment ].
+	    comment ] "."
 
-param_list = [ident {"," ident}]
+dec_param_list = [type ident {"," type ident}]
 
-condition = expression ("equal"|"<"|"<="|">"|">=") expression
+call_param_list = [ident {ident}]
+
+condition = expression ("eq"|"neq"|"<"|"<="|">"|">=") expression
 
 expression = [ "+"|"-"|"not"] term { ("+"|"-"|"not") term}
 
 term = factor {("*"|"/"|"mod"|"and"|"or") factor}
 
-factor = ident | number | "(" expression ")" 
+factor = ident | number | "(" expression ")"
 
-type = "int" | "boolean" | "char" | "float" | "vector of" number type
+type = "int" | "bool" | "char" | "float" | "vector of" number type
 
 comment = "@" text "@" | "#" text
-
-
