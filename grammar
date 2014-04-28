@@ -1,0 +1,31 @@
+program = block <EOF>
+
+block = [ ident "is" type {"," ident "is" type} "."]
+        { "dec" ident param_list "->" block "." } statement
+
+statement = [ ident "<-" expression | 
+	    ident ":" param_list |
+            "if" condition "," statement [";" "else if" condition "," statement] [";" "else" statement] "." |
+	    "foreach" ident "in" ident statement {"." statement} | 
+            "repeat" statement {"." statement} "until" condition |
+	    "turnout" expression |
+	    "incr" ident |
+	    "decr" ident |
+	    ident "'" ident |
+	    comment ].
+
+param_list = [ident {"," ident}]
+
+condition = expression ("="|"#"|"<"|"<="|">"|">=") expression
+
+expression = [ "+"|"-"] term { ("+"|"-") term}
+
+term = factor {("*"|"/") factor}
+
+factor = ident | number | "(" expression ")" 
+
+type = "int" | "boolean" | "char" | "float" | "vector of" number type
+
+comment = "doc" text "doc" | "#" text
+
+
