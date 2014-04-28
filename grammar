@@ -16,16 +16,16 @@ statement = [ ident "<-" expression |
 
 param_list = [ident {"," ident}]
 
-condition = expression ("="|"#"|"<"|"<="|">"|">=") expression
+condition = expression ("equal"|"<"|"<="|">"|">=") expression
 
-expression = [ "+"|"-"] term { ("+"|"-") term}
+expression = [ "+"|"-"|"not"] term { ("+"|"-"|"not") term}
 
-term = factor {("*"|"/") factor}
+term = factor {("*"|"/"|"mod"|"and"|"or") factor}
 
 factor = ident | number | "(" expression ")" 
 
 type = "int" | "boolean" | "char" | "float" | "vector of" number type
 
-comment = "doc" text "doc" | "#" text
+comment = "@" text "@" | "#" text
 
 
