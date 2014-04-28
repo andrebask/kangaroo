@@ -8,7 +8,7 @@ statement = [ ident "<-" expression |
             "if" condition "," statement [";" "else if" condition "," statement] [";" "else" statement] "." |
 	    "foreach" ident "in" ident statement {"." statement} | 
             "repeat" statement {"." statement} "until" condition |
-	    "turnout" expression |
+	    "return" expression |
 	    "incr" ident |
 	    "decr" ident |
 	    ident "'" ident |
