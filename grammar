@@ -1,7 +1,7 @@
 program = block <EOF>
 
 block = [ ident "is" type {"," ident "is" type} "."]
-        { "dec" ident dec_param_list ":" type "->" block "." } statement
+        { "dec" ident dec_param_list [":" type] "->" block "." } statement
 
 statement = [ ident "<-" expression |
 	    ident call_param_list |
