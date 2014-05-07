@@ -53,7 +53,7 @@ symbols =  {
     'or_sym'        : ['or'],
     'not_sym'       : ['not'],
 	'if_sym'        : ['if'],
-    'else_sym'      : ['_sym'],
+    'else_sym'      : ['else'],
 	'becomes'       : ['<-'],
 	'comma'         : [','],
 	'period'        : ['.'],
@@ -117,5 +117,16 @@ main.
 '''
 
 if __name__ == '__main__' :
-	for t,w in lexer(__test_program) :
-		print t, w
+    print [symbols[x][0] for x in symbols.keys()]
+    for t,w in lexer(__test_program) :
+        print t, w
+
+
+
+
+
+
+
+
+
+

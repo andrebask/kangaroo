@@ -4,8 +4,9 @@ __doc__ = '''PL/0 recursive descent parser adapted from Wikipedia'''
 
 from ir import *
 from logger import logger
+from lexer import symbols
 
-symbols =  [ 'ident', 'number', 'lparen', 'rparen', 'times', 'slash', 'plus', 'minus', 'eql', 'neq', 'lss', 'leq', 'gtr', 'geq', 'callsym', 'beginsym', 'semicolon', 'endsym', 'ifsym', 'whilesym', 'becomes', 'thensym', 'dosym', 'constsym', 'comma', 'varsym', 'procsym', 'period', 'oddsym' ]
+symbols = symbols.keys()
 
 sym = None
 value = None
@@ -14,7 +15,7 @@ new_value = None
 
 def getsym():
 	'''Update sym'''
-	global new_sym 
+	global new_sym
 	global new_value
 	global sym
 	global value
@@ -26,20 +27,20 @@ def getsym():
 		return 2
 	print 'getsym:', new_sym, new_value
 	return 1
-	
+
 def error(msg):
 	print msg, new_sym, new_value
-	
+
 def accept(s):
 	print 'accepting', s, '==', new_sym
 	return getsym() if new_sym==s else 0
- 
+
 def expect(s) :
 	print 'expecting', s
 	if accept(s) : return 1
 	error("expect: unexpected symbol")
 	return 0
- 
+
 @logger
 def factor(symtab) :
 	if accept('ident') : return Var(var=symtab.find(value), symtab=symtab)
@@ -51,7 +52,7 @@ def factor(symtab) :
 	else :
 		error("factor: syntax error")
 		getsym()
- 
+
 @logger
 def term(symtab) :
 	op=None
@@ -62,7 +63,7 @@ def term(symtab) :
 		expr2 = factor(symtab)
 		expr = BinExpr(children=[ op, expr, expr2 ], symtab=symtab)
 	return expr
- 
+
 @logger
 def expression(symtab) :
 	op=None
@@ -77,10 +78,10 @@ def expression(symtab) :
 		expr2 = term(symtab)
 		expr = BinExpr(children=[ op, expr, expr2 ], symtab=symtab)
 	return expr
- 
+
 @logger
 def condition(symtab) :
-	if accept('oddsym') : 
+	if accept('oddsym') :
 		return UnExpr(children=['odd', expression(symtab)], symtab=symtab)
 	else :
 		expr = expression(symtab);
@@ -93,7 +94,7 @@ def condition(symtab) :
 		else :
 			error("condition: invalid operator")
 			getsym();
- 
+
 @logger
 def statement(symtab) :
 	if accept('ident') :
@@ -125,7 +126,7 @@ def statement(symtab) :
 	elif accept('print') :
 		expect('ident')
 		return PrintStat(symbol=symtab.find(value),symtab=symtab)
- 
+
 @logger
 def block(symtab) :
 	local_vars = SymbolTable()
@@ -160,7 +161,7 @@ def block(symtab) :
 		defs.append(FunctionDef(symbol=local_vars.find(fname), body=fbody))
 	stat = statement(SymbolTable(symtab[:]+local_vars))
 	return Block(gl_sym=symtab, lc_sym=local_vars, defs=defs, body=stat)
- 
+
 @logger
 def program() :
 	'''Axiom'''
@@ -177,7 +178,7 @@ if __name__ == '__main__' :
 	the_lexer=lexer(__test_program)
 	res = program()
 	print '\n', res, '\n'
-			
+
 	res.navigate(print_stat_list)
 	from support import *
 

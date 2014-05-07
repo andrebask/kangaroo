@@ -1,0 +1,52 @@
+# switch
+match key:
+   1, x <- x * x.
+      return x.
+   2, y <- y * x.
+      incr y.
+      return y.
+   , return x.
+
+# lambda
+[int x, int y: int] ->
+	x <- x * y.
+	return x.
+.
+
+# loop
+repeat
+	decr x.	
+until x<5.
+
+repeat 
+	decr x.
+6 times.
+
+# type system
+type Animal:
+	property color is int.
+	property weight is float.
+	
+	operation eat int x: int ->
+		weight <- weight + x.
+		return weight.
+	.
+.
+
+type Dog is Animal:
+
+	override eat int x: int ->
+		weight <- (weight + x) * 2.
+		return weight.
+	.
+.
+
+#breakpoint
+
+breakpoint.
+	
+
+
+		
+	 
+

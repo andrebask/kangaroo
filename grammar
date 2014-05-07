@@ -5,14 +5,15 @@ block = [ ident "is" type {"," ident "is" type} "."]
 
 statement = [ ident "<-" expression |
 	    ident call_param_list |
-            "if" condition "," statement ["else if" condition "," statement] ["else" statement] |
-	    "foreach" ident "in" ident statement {"." statement} |
-            "repeat" statement {"." statement} "until" condition |
+            "if" condition "," statement {statement} ["else if" condition "," statement {statement}] ["else" statement {statement}] |
+	    "match" expression ":" { number "," statement {statement} } "," statement {statement} | 
+	    "foreach" ident "in" ident statement {statement} |
+            "repeat" statement {statement} "until" condition |
 	    "return" expression |
 	    "incr" ident |
 	    "decr" ident |
 	    ident "'" ident |
-	    comment ] "."
+	    comment ] "." "\n"
 
 dec_param_list = [type ident {"," type ident}]
 
