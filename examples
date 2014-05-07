@@ -6,6 +6,7 @@ match key:
       incr y.
       return y.
    , return x.
+.
 
 # lambda
 [int x, int y: int] ->
@@ -42,8 +43,22 @@ type Dog is Animal:
 .
 
 #breakpoint
-
 breakpoint.
+
+# a program
+
+a, b are int.
+c is char.
+
+dec square int x: int ->
+    return x * x.
+.
+
+dec main ->
+    square 2.
+.
+
+main.
 	
 
 
