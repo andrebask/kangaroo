@@ -68,9 +68,12 @@ data Term
   | BinOp Term Term
   deriving (Eq, Ord, Show)
 
-type CallParams =  [Factor]
+type CallParams =  [Term]
 
-type DecParams = [(Type, Identifier)]
+data DecParam =  DecParams Type Identifier
+  deriving (Eq, Ord, Show)
+
+type DecParams =  [DecParam]
 
 type Index = Identifier
 
