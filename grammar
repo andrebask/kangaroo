@@ -2,8 +2,8 @@ program = block <EOF>
 
 block = { ident "is" type "."}
 	{ ident "," ident {"," ident} "are" type "."}
-	{ "type" ident ["is" ident] ":" 
-		{"property" ident "is" type "."} 
+	{ "type" ident ["is" ident] ":"
+		{"property" ident "is" type "."}
 		{("operation"|"override") function_sign "."} }
         {function_dec} statement {statement}
 
@@ -12,12 +12,12 @@ function_dec = "dec" function_sign "."
 function_sign = ident dec_param_list [":" type] "->" block
 
 statement = [ ident "<-" expression |
-            "if" condition "," statement {statement} 
-		["else if" condition "," statement {statement}] 
+            "if" condition "," statement {statement}
+		["else if" condition "," statement {statement}]
 		["else" statement {statement}] |
-	    "match" expression ":" 
-		{ number "," statement {statement} } 
-		"," statement {statement} | 
+	    "match" expression ":"
+		{ number "," statement {statement} }
+		"," statement {statement} |
 	    "foreach" ident "in" ident statement {statement} |
             "repeat" statement {statement} "until" condition |
 	    "repeat" statement {statement} (ident|number) "times" |
@@ -41,7 +41,7 @@ function_call = ident call_param_list
 
 dec_param_list = [type ident {"," type ident}]
 
-call_param_list = [ident {ident}]
+call_param_list = [factor {factor}]
 
 term = factor {("*"|"/"|"mod"|"and"|"or") factor}
 
