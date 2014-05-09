@@ -21,6 +21,8 @@ data CompareOp
   | Lt
   | Geq
   | Leq
+  | Eq
+  | Neq
   deriving (Eq, Ord, Show)
 
 data UnaryOp
@@ -36,6 +38,7 @@ data Comment
 data Number
   = Int
   | Float
+  | Double
   deriving (Eq, Ord, Show)
 
 data Datum
@@ -52,6 +55,7 @@ data Type
   | BoolType
   | CharType
   | FloatType
+  | VoidType
   | VectType Size Type
   deriving (Eq, Ord, Show)
 
@@ -70,7 +74,7 @@ data Term
 
 type CallParams =  [Term]
 
-data DecParam =  DecParams Type Identifier
+data DecParam =  DecParam Type Identifier
   deriving (Eq, Ord, Show)
 
 type DecParams =  [DecParam]
@@ -96,7 +100,9 @@ data Case = Case [Datum] Body
 
 data Declaration
   = DecVar Identifier Type
+  | DecVect Identifier Size Type
   | DecFun Identifier DecParams Type Block
+  | DecStruct DataStruct
   deriving (Eq, Ord, Show)
 
 data Statement
@@ -115,7 +121,7 @@ data Statement
   deriving (Eq, Ord, Show)
 
 data DataStruct
-  = DataStruct [Property] [Operation]
+  = DataStruct Identifier Type [Property] [Operation]
   deriving (Eq, Ord, Show)
 
 type Override = Bool

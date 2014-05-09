@@ -8,12 +8,14 @@ import qualified Text.Parsec.Token as Tok
 lexer :: Tok.TokenParser ()
 lexer = Tok.makeTokenParser style
   where
-    ops = ["+", "*", "-", "mod", "/", "<", ">", "=", "'",
-           "or", "not", "<-", "and"]
+    ops = ["+", "*", "-", "mod", "/",
+           "<", ">", "<=", ">=", "=",
+           "eq", "neq", "'", "or", "not", "<-",
+           "and"]
 
     names = ["char", "if", "incr", "int", "decr",
 	     "bool", "else", "vector", "dec", "->",
-	     "foreach", "neq", "in", "of", "float", "eq",
+	     "foreach", "in", "of", "float",
 	     "repeat", "return", "is", "are", "until",
              "true", "false"]
 
@@ -32,14 +34,11 @@ integer = Tok.integer lexer
 float :: Parser Double
 float = Tok.float lexer
 
-decimal :: Parser Integer
-decimal = Tok.decimal lexer
-
 hexadecimal :: Parser Integer
-hexadecimal = Tok.decimal lexer
+hexadecimal = Tok.hexadecimal lexer
 
-char :: Parser Char
-char = Tok.charLiteral lexer
+character :: Parser Char
+character = Tok.charLiteral lexer
 
 string :: Parser String
 string = Tok.stringLiteral lexer
@@ -67,6 +66,9 @@ dot = Tok.dot lexer
 
 whitespace :: Parser ()
 whitespace = Tok.whiteSpace lexer
+
+operator :: Parser String
+operator = Tok.operator lexer
 
 identifier :: Parser String
 identifier = Tok.identifier lexer
