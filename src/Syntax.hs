@@ -54,6 +54,7 @@ data Type
   = IntType
   | BoolType
   | CharType
+  | StringType
   | FloatType
   | VoidType
   | VectType Size Type
@@ -84,7 +85,7 @@ type Index = Identifier
 data Expr
   = Term
   | FunCall Identifier CallParams
-  | Lambda DecParams Block
+  | Lambda DecParams Type Block
   | Get Identifier Index
   deriving (Eq, Ord, Show)
 
@@ -95,7 +96,7 @@ type Body = [Statement]
 type Then = Body
 type Else = Body
 
-data Case = Case [Datum] Body
+data Clause = Clause [Datum] Body
   deriving (Eq, Ord, Show)
 
 data Declaration
@@ -108,7 +109,7 @@ data Declaration
 data Statement
   = Assign Identifier Expr
   | If Condition Then Else
-  | Match Expr [Case]
+  | Match Expr [Clause]
   | Foreach Identifier Identifier Body
   | RepeatU Body Condition
   | RepeatT Body (Either Identifier Number)

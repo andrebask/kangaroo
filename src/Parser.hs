@@ -58,96 +58,134 @@ false = do reserved "false"
 number :: Parser Number
 number = try integer
       <|> try float
-      <|> try hexadecimal
+      <|> hexadecimal
 
 datum :: Parser Datum
-datum = try number
-     <|> try character
-     <|> try Lexer.string
+datum = number
+     <|> character
+     <|> try true
+     <|> try false
+     <|> Lexer.string
 
-expr :: Parser Expr
-expr =  Ex.buildExpressionParser (unops ++ binops) factor
+typedec :: Parser Type
+typedec = do reserved "int"
+             return IntType
+       <|> do reserved "bool"
+              return BoolType
+       <|> do reserved "char"
+              return CharType
+       <|> do reserved "string"
+              return StringType
+       <|> do reserved "float"
+              return FloatType
 
-variable :: Parser Expr
-variable = do
-  name <- identifier
-  reserved "is"
+factor :: Parser Factor
+factor = datum
+       <|> identifier
+       <|> expr
 
--- Tutorial code
------------------------------------------------------------------
-function :: Parser Expr
-function = do
-  reserved "dec"
-  name <- identifier
-  args <- parens $ many identifier
-  body <- expr
-  return $ Function name args body
+term :: Parser Term
+term = factor
+    <|> Ex.buildExpressionParser (unops ++ binops) term
 
-extern :: Parser Expr
-extern = do
-  reserved "extern"
-  name <- identifier
-  args <- parens $ many identifier
-  return $ Extern name args
+-- expr :: Parser Expr
+-- expr =  Ex.buildExpressionParser (unops ++ binops) factor
+
+callParams :: Parser CallParams
+callParams = many $ do whitespace
+                       t <- term
+                       return t
 
 call :: Parser Expr
 call = do
   name <- identifier
-  args <- parens $ commaSep expr
-  return $ Call name args
+  args <- callParams
+  return $ FunCall name args
 
-ifthen :: Parser Expr
+expr :: Parser Expr
+expr = term
+    <|> call
+    <|> lambda
+    <|> vectorGet
+
+lambda :: Parser Expr
+lambda = do paramsret <- brackets
+            (params:ret) <- colonSep paramsret
+            reserved "->"
+            body <- many $ statement
+            return $ Lambda (decParams params)
+                            (typedec ret)
+                            body
+
+vectorGet :: Parser Expr
+vectorGet = do name <- identifier
+               reservedOp "'"
+               index <- integer
+               return $ Get name index
+
+dec :: Parser Declaration
+dec = try $ do name <- identifier
+               reserved "is"
+               type_ <- typedec
+               return $ DecVar name type_
+   <|> do name <- identifier
+          reserved "is"
+          reserved "vector"
+          reserved "of"
+          size <- integer
+          type_ <- typedec
+          return $ DecVect name size type_
+   <|> function
+--   <|> structure --TODO
+
+decParams :: Parser DecParams
+decParams = do
+  whitespace
+  params <- commaSep (do type_ <- typedec
+                         name <- identifier
+                         return DecParam type_ name)
+  return params
+
+function :: Parser Declaration
+function = do reserved "dec"
+              name <- identifier
+              args <- many decParams
+              colon
+              ret <- typedec
+              reserved "->"
+              body <- many $ statement
+              dot
+              return $ DecFun name args ret body
+
+condition :: Parser Condition
+condition = 0 --TODO
+
+ifthen :: Parser Statement
 ifthen = do
   reserved "if"
-  cond <- expr
-  reserved "then"
-  tr <- expr
+  cond <- condition
+  comma
+  th <- many statement
   reserved "else"
-  fl <- expr
-  return $ If cond tr fl
+  el <- many statement
+  dot
+  return $ If cond th el
 
-for :: Parser Expr
-for = do
-  reserved "for"
+foreach :: Parser Statement
+foreach = do
+  reserved "foreach"
   var <- identifier
-  reservedOp "="
-  start <- expr
-  reservedOp ","
-  cond <- expr
-  reservedOp ","
-  step <- expr
   reserved "in"
-  body <- expr
-  return $ For var start cond step body
+  iterator <-identifier
+  body <- many statement
+  dot
+  return $ Foreach var iterator body
 
-letins :: Parser Expr
-letins = do
-  reserved "var"
-  defs <- commaSep $ do
-    var <- identifier
-    reservedOp "="
-    val <- expr
-    return (var, val)
-  reserved "in"
-  body <- expr
-  return $ foldr (uncurry Let) body defs
+statement :: Parser Statement
+statement = 0 --TODO
 
-factor :: Parser Expr
-factor = try floating
-      <|> try int
-      <|> try call
-      <|> try variable
-      <|> ifthen
-      <|> try letins
-      <|> for
-      <|> (parens expr)
-
-defn :: Parser Expr
-defn = try extern
-    <|> try function
-    <|> try unarydef
-    <|> try binarydef
-    <|> expr
+-- Tutorial code
+-----------------------------------------------------------------
 
 contents :: Parser a -> Parser a
 contents p = do
