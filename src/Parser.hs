@@ -123,19 +123,19 @@ vectorGet = do name <- identifier
                index <- integer
                return $ Get name index
 
-dec :: Parser Declaration
-dec = try $ do name <- identifier
-               reserved "is"
-               type_ <- typedec
-               return $ DecVar name type_
-   <|> do name <- identifier
-          reserved "is"
-          reserved "vector"
-          reserved "of"
-          size <- integer
-          type_ <- typedec
-          return $ DecVect name size type_
-   <|> function
+declaration :: Parser Declaration
+declaration = try $ do name <- identifier
+                       reserved "is"
+                       type_ <- typedec
+                       return $ DecVar name type_
+           <|> do name <- identifier
+                  reserved "is"
+                  reserved "vector"
+                  reserved "of"
+                  size <- integer
+                  type_ <- typedec
+                  return $ DecVect name size type_
+           <|> function
 --   <|> structure --TODO
 
 decParams :: Parser DecParams
@@ -188,7 +188,7 @@ foreach = do
   reserved "foreach"
   var <- identifier
   reserved "in"
-  iterator <-identifier
+  iterator <- identifier
   body <- many statement
   dot
   return $ Foreach var iterator body
@@ -196,7 +196,7 @@ foreach = do
 assign :: Parser Statement
 assign = do name <- identifier
             reservedOp "<-"
-            epx <- expr
+            exp <- expr
             dot
             return $ Assign name exp
 
@@ -221,13 +221,58 @@ match = do reserved "match"
            return $ Match key (clauses ++ def)
 
 repeatU :: Parser Statement
-repeatU = 0 --TODO
+repeatU = do reserved "repeat"
+             body <- many statement
+             reserved "until"
+             cond <- condition
+             dot
+             return $ RepeatU body cond
 
 repeatT :: Parser Statement
-repeatT = 0 --TODO
+repeatT = do reserved "repeat"
+             body <- many statement
+             id <- (do n <- number
+                       return (Right n)
+                    <|> do i <- identifier
+                           return (Left i))
+             reserved "times"
+             dot
+             return $ RepeatT body id
+
+retst :: Parser Statement
+retst = do reserved "return"
+           exp <- expr
+           dot
+           return $ Return exp
+
+incr :: Parser Statement
+incr = do reserved "incr"
+          id <- identifier
+          dot
+          return $ Incr id
+
+decr :: Parser Statement
+decr = do reserved "decr"
+          id <- identifier
+          dot
+          return $ Decr id
 
 statement :: Parser Statement
-statement = 0 --TODO
+statement = assign
+         <|> ifst
+         <|> match
+         <|> foreach
+         <|> try repeatU
+         <|> repeatT
+         <|> retst
+         <|> incr
+         <|> decr
+         <|> do {e <- expr; return (Statement e)}
+
+block :: Parser Block
+block = do decs <- many declaration
+           sts <- many statement
+           return $ Block decs sts
 
 -- Tutorial code
 -----------------------------------------------------------------
@@ -239,14 +284,8 @@ contents p = do
   eof
   return r
 
-toplevel :: Parser [Expr]
-toplevel = many $ do
-    def <- defn
-    reservedOp ";"
-    return def
-
 parseExpr :: String -> Either ParseError Expr
 parseExpr s = parse (contents expr) "<stdin>" s
 
-parseToplevel :: String -> Either ParseError [Expr]
-parseToplevel s = parse (contents toplevel) "<stdin>" s
+parseToplevel :: String -> Either ParseError Block
+parseToplevel s = parse (contents block) "<stdin>" s
