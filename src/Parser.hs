@@ -160,8 +160,8 @@ function = do reserved "dec"
 condition :: Parser Condition
 condition = 0 --TODO
 
-ifthen :: Parser Statement
-ifthen = do
+ifthenelse :: Parser Statement
+ifthenelse = do
   reserved "if"
   cond <- condition
   comma
@@ -170,6 +170,18 @@ ifthen = do
   el <- many statement
   dot
   return $ If cond th el
+
+ifthen :: Parser Statement
+ifthen = do
+  reserved "if"
+  cond <- condition
+  comma
+  th <- many statement
+  dot
+  return $ If cond th []
+
+ifst :: Parser Statement
+ifst = try ifthenelse <|> ifthen
 
 foreach :: Parser Statement
 foreach = do
@@ -180,6 +192,39 @@ foreach = do
   body <- many statement
   dot
   return $ Foreach var iterator body
+
+assign :: Parser Statement
+assign = do name <- identifier
+            reservedOp "<-"
+            epx <- expr
+            dot
+            return $ Assign name exp
+
+clause :: Parser Clause
+clause = do datums <- commaSep1 datum
+            comma
+            body <- many statement
+            return $ Clause datums body
+
+defclause :: Parser Clause
+defclause = do comma
+               body <- many statement
+               return $ Clause [] body
+
+match :: Parser Statement
+match = do reserved "match"
+           key <- expr
+           colon
+           clauses <- many clause
+           def <- option [] defclause
+           dot
+           return $ Match key (clauses ++ def)
+
+repeatU :: Parser Statement
+repeatU = 0 --TODO
+
+repeatT :: Parser Statement
+repeatT = 0 --TODO
 
 statement :: Parser Statement
 statement = 0 --TODO
