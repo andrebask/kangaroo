@@ -4,6 +4,9 @@ import Text.Parsec
 import Text.Parsec.String (Parser)
 import Control.Applicative ((<$>))
 
+import Control.Monad.Trans
+import System.Console.Haskeline
+
 import qualified Text.Parsec.Expr as Ex
 import qualified Text.Parsec.Token as Tok
 
@@ -273,7 +276,7 @@ statement = assign
          <|> retst
          <|> incr
          <|> decr
-         <|> do {e <- expr; return (Statement e)}
+--         <|> do {e <- expr; return (Statement e)}
 
 block :: Parser Block
 block = do decs <- many declaration
@@ -283,6 +286,7 @@ block = do decs <- many declaration
 contents :: Parser a -> Parser a
 contents p = do
   Tok.whiteSpace lexer
+  lift $ return $ print "contents"
   r <- p
   eof
   return r

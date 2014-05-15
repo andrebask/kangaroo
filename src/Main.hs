@@ -1,59 +1,24 @@
---------------------------------------------------------------------
--- |
--- Module    :  Main
--- Copyright :  (c) Stephen Diehl 2013
--- License   :  MIT
--- Maintainer:  stephen.m.diehl@gmail.com
--- Stability :  experimental
--- Portability: non-portable
---
---------------------------------------------------------------------
-
 module Main where
 
 import Parser
-import Codegen
-import Emit
+import Syntax
 
 import Control.Monad.Trans
-
-import System.IO
-import System.Environment
 import System.Console.Haskeline
 
-import qualified LLVM.General.AST as AST
-
-initModule :: AST.Module
-initModule = emptyModule "my cool jit"
-
-process :: AST.Module -> String -> IO (Maybe AST.Module)
-process modo source = do
-  let res = parseToplevel source
+process :: String -> IO ()
+process line = do
+  let res = parseToplevel line
   case res of
-    Left err -> print err >> return Nothing
-    Right ex -> do
-      ast <- codegen modo ex
-      return $ Just ast
+    Left err -> print err
+    Right (Block dec sts) -> do mapM_ print dec
+                                mapM_ print sts
 
-processFile :: String -> IO (Maybe AST.Module)
-processFile fname = readFile fname >>= process initModule
-
-repl :: IO ()
-repl = runInputT defaultSettings (loop initModule)
+main :: IO ()
+main = runInputT defaultSettings loop
   where
-  loop mod = do
+  loop = do
     minput <- getInputLine "k> "
     case minput of
       Nothing -> outputStrLn "Goodbye."
-      Just input -> do
-        modn <- liftIO $ process mod input
-        case modn of
-          Just modn -> loop modn
-          Nothing -> loop mod
-
-main :: IO ()
-main = do
-  args <- getArgs
-  case args of
-    []      -> repl
-    [fname] -> processFile fname >> return ()
+      Just input -> (liftIO $ process input) >> loop
