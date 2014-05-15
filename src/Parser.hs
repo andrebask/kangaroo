@@ -10,15 +10,17 @@ import qualified Text.Parsec.Token as Tok
 import Lexer
 import Syntax
 
-binary s t assoc = Ex.Infix (reservedOp s >> return (t)) assoc
-unary s t = Ex.Prefix (reservedOp s >> return (t))
+
+binary s t assoc = Ex.Infix (reservedOp s >> return (Op t)) assoc
+unary s t = Ex.Prefix (reservedOp s >> return (UnOp t))
+comp s t = Ex.Infix (reservedOp s >> return (CondOp t)) Ex.AssocNone
 
 op :: Parser String
 op = do
   o <- operator
   return o
 
-alfaBinary s t assoc = Ex.Infix (reservedOp s >> return (t)) assoc
+alfaBinary s t assoc = Ex.Infix (reservedOp s >> return (Op t)) assoc
 
 alfaOp :: Parser String
 alfaOp = do
@@ -32,17 +34,17 @@ binops = [[binary "<-" Arrow Ex.AssocLeft]
         ,[binary "*" Times Ex.AssocLeft,
           binary "/" Divide Ex.AssocLeft]
         ,[binary "+" Plus Ex.AssocLeft,
-          binary "-" BinMinus Ex.AssocLeft]
-        ,[binary "<" Lt Ex.AssocNone,
-          binary ">" Gt Ex.AssocNone,
-          binary "=" Eq Ex.AssocNone,
-          binary "<=" Geq Ex.AssocNone,
-          binary ">=" Leq Ex.AssocNone,
-          alfaBinary "eq" Eq Ex.AssocNone,
-          alfaBinary "neq" Neq Ex.AssocNone,
-          alfaBinary "or" Or Ex.AssocNone,
-          alfaBinary "not" Not Ex.AssocNone,
-          alfaBinary "and" And Ex.AssocNone]]
+          binary "-" BinMinus Ex.AssocLeft]]
+
+compops = [[comp "<" Lt,
+             comp ">" Gt,
+             comp "=" Eq,
+             comp "<=" Geq,
+             comp ">=" Leq,
+             comp "eq" Eq,
+             comp "neq" Neq,
+             comp "or" Or,
+             comp "and" And]]
 
 unops = [[unary "-" UnMinus]
         ,[unary "not" Not]]
@@ -56,16 +58,16 @@ false = do reserved "false"
            return False
 
 number :: Parser Number
-number = try integer
-      <|> try float
-      <|> hexadecimal
+number = try (do {i <- integer; return (Integer i)})
+      <|> try (do {f <- float; return (Float f)})
+      <|> do {h <- hexadecimal; return (Hexa h)}
 
 datum :: Parser Datum
-datum = number
-     <|> character
-     <|> try true
-     <|> try false
-     <|> Lexer.string
+datum = do {n <- number; return (Number n)}
+     <|> try (do {t <- true; return (Bool t)})
+     <|> try (do {f <- false; return (Bool f)})
+     <|> do {s <- Lexer.string; return (String s)}
+     <|> do {c <- character; return (Char c)}
 
 typedec :: Parser Type
 typedec = do reserved "int"
@@ -80,12 +82,12 @@ typedec = do reserved "int"
               return FloatType
 
 factor :: Parser Factor
-factor = datum
-       <|> identifier
-       <|> expr
+factor = do {d <- datum; return (Datum d)}
+       <|> do {id <- identifier; return(Id id)}
+       <|> do {e <- expr; return (Expr e)}
 
 term :: Parser Term
-term = factor
+term = do {f <- factor; return (Term f)}
     <|> Ex.buildExpressionParser (unops ++ binops) term
 
 -- expr :: Parser Expr
@@ -103,19 +105,19 @@ call = do
   return $ FunCall name args
 
 expr :: Parser Expr
-expr = term
+expr = do {t <- term; return (TermExpr t)}
     <|> call
-    <|> lambda
+--    <|> lambda
     <|> vectorGet
 
-lambda :: Parser Expr
-lambda = do paramsret <- brackets
-            (params:ret) <- colonSep paramsret
-            reserved "->"
-            body <- many $ statement
-            return $ Lambda (decParams params)
-                            (typedec ret)
-                            body
+-- lambda :: Parser Expr
+-- lambda = do paramsret <- brackets
+--             (params:ret) <- colonSep paramsret
+--             reserved "->"
+--             body <- many $ statement
+--             return $ Lambda (decParams params)
+--                             (typedec ret)
+--                             body
 
 vectorGet :: Parser Expr
 vectorGet = do name <- identifier
@@ -143,22 +145,23 @@ decParams = do
   whitespace
   params <- commaSep (do type_ <- typedec
                          name <- identifier
-                         return DecParam type_ name)
+                         return $ DecParam type_ name)
   return params
 
 function :: Parser Declaration
 function = do reserved "dec"
               name <- identifier
-              args <- many decParams
+              args <- decParams
               colon
               ret <- typedec
               reserved "->"
               body <- many $ statement
               dot
-              return $ DecFun name args ret body
+              return $ DecFun name args ret (Block [] body)
 
-condition :: Parser Condition
-condition = 0 --TODO
+condition :: Parser Expr
+condition = Ex.buildExpressionParser (compops) condition
+
 
 ifthenelse :: Parser Statement
 ifthenelse = do
@@ -216,7 +219,10 @@ match = do reserved "match"
            key <- expr
            colon
            clauses <- many clause
-           def <- option [] defclause
+           def <- option (Clause [] []) defclause
+           def <- case def of
+             Clause [] [] -> return []
+             _ -> return [def]
            dot
            return $ Match key (clauses ++ def)
 
@@ -273,9 +279,6 @@ block :: Parser Block
 block = do decs <- many declaration
            sts <- many statement
            return $ Block decs sts
-
--- Tutorial code
------------------------------------------------------------------
 
 contents :: Parser a -> Parser a
 contents p = do

@@ -1,8 +1,10 @@
 module Syntax where
 
+import qualified Data.Vector as V
+
 type Identifier = String
 
-type Size = Int
+type Size = Integer
 
 data BinOp
   = Plus
@@ -10,8 +12,6 @@ data BinOp
   | Times
   | Divide
   | Mod
-  | And
-  | Or
   | Arrow
   | CompareOp
   deriving (Eq, Ord, Show)
@@ -23,6 +23,8 @@ data CompareOp
   | Leq
   | Eq
   | Neq
+  | And
+  | Or
   deriving (Eq, Ord, Show)
 
 data UnaryOp
@@ -36,18 +38,19 @@ data Comment
   deriving (Eq, Ord, Show)
 
 data Number
-  = Int
-  | Float
-  | Double
+  = Integer Integer
+  | Float Double
+  | Double Double
+  | Hexa Integer
   deriving (Eq, Ord, Show)
 
 data Datum
-  = Number
-  | Bool
-  | Char
-  | String
-  | List
-  | Vector
+  = Number Number
+  | Bool Bool
+  | Char Char
+  | String String
+  | List [Datum]
+  | Vector (V.Vector Datum)
   deriving (Eq, Ord, Show)
 
 data Type
@@ -61,16 +64,16 @@ data Type
   deriving (Eq, Ord, Show)
 
 data Factor
-  = Identifier
-  | Datum
-  | Expr
+  = Id Identifier
+  | Datum Datum
+  | Expr Expr
   | Parenthesized Expr
   deriving (Eq, Ord, Show)
 
 data Term
-  = Factor
-  | UnaryOp Term
-  | BinOp Term Term
+  = Term Factor
+  | UnOp UnaryOp Term
+  | Op BinOp Term Term
   deriving (Eq, Ord, Show)
 
 type CallParams =  [Term]
@@ -80,17 +83,18 @@ data DecParam =  DecParam Type Identifier
 
 type DecParams =  [DecParam]
 
-type Index = Identifier
+type Index = Integer
 
 data Expr
-  = Term
+  = TermExpr Term
+  | CondOp CompareOp Expr Expr
   | FunCall Identifier CallParams
   | Lambda DecParams Type Block
   | Get Identifier Index
   deriving (Eq, Ord, Show)
 
-data Condition = Op CompareOp Expr Expr
-  deriving (Eq, Ord, Show)
+-- type Condition = CondOp CompareOp Expr Expr
+--  deriving (Eq, Ord, Show)
 
 type Body = [Statement]
 type Then = Body
@@ -108,10 +112,10 @@ data Declaration
 
 data Statement
   = Assign Identifier Expr
-  | If Condition Then Else
+  | If Expr Then Else
   | Match Expr [Clause]
   | Foreach Identifier Identifier Body
-  | RepeatU Body Condition
+  | RepeatU Body Expr
   | RepeatT Body (Either Identifier Number)
   | Return Expr
   | Incr Identifier
