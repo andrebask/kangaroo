@@ -37,15 +37,11 @@ data Comment
   | BlockComment
   deriving (Eq, Ord, Show)
 
-data Number
+data Datum
   = Integer Integer
   | Float Double
   | Double Double
   | Hexa Integer
-  deriving (Eq, Ord, Show)
-
-data Datum
-  = Number Number
   | Bool Bool
   | Char Char
   | String String
@@ -63,15 +59,11 @@ data Type
   | VectType Size Type
   deriving (Eq, Ord, Show)
 
-data Factor
+data Term
   = Id Identifier
   | Datum Datum
   | Expr Expr
   | Parenthesized Expr
-  deriving (Eq, Ord, Show)
-
-data Term
-  = Term Factor
   | UnOp UnaryOp Term
   | Op BinOp Term Term
   deriving (Eq, Ord, Show)
@@ -116,7 +108,7 @@ data Statement
   | Match Expr [Clause]
   | Foreach Identifier Identifier Body
   | RepeatU Body Expr
-  | RepeatT Body (Either Identifier Number)
+  | RepeatT Body (Either Identifier Datum)
   | Return Expr
   | Incr Identifier
   | Decr Identifier

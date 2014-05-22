@@ -18,3 +18,4 @@ executable kangaroo
     , transformers
     , vector
     , parsec
+    , containers

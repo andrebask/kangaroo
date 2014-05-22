@@ -9,31 +9,57 @@ import System.Console.Haskeline
 
 import qualified Text.Parsec.Expr as Ex
 import qualified Text.Parsec.Token as Tok
+import qualified Data.Map as M
 
 import Lexer
 import Syntax
 
+binop = Ex.Infix (Op <$> op) Ex.AssocLeft
+-- unop = Ex.Prefix (UnOp <$> op)
 
 binary s t assoc = Ex.Infix (reservedOp s >> return (Op t)) assoc
 unary s t = Ex.Prefix (reservedOp s >> return (UnOp t))
 comp s t = Ex.Infix (reservedOp s >> return (CondOp t)) Ex.AssocNone
 
-op :: Parser String
-op = do
-  o <- operator
-  return o
+opMap = M.fromList [("+",   Plus)
+                   ,("*",   Times)
+                   ,("-",   BinMinus)
+                   ,("mod", Mod)
+                   ,("/",   Divide)
+                   ,("<-",  Arrow)]
 
-alfaBinary s t assoc = Ex.Infix (reservedOp s >> return (Op t)) assoc
+compMap = M.fromList [("<",   Lt)
+                     ,(">",   Gt)
+                     ,("<=",  Leq)
+                     ,(">=",  Geq)
+                     ,("=",   Eq)
+                     ,("eq",  Eq)
+                     ,("neq", Neq)
+                     ,("or",  Or)
+                     ,("and", And)]
 
-alfaOp :: Parser String
-alfaOp = do
+opLookup key = M.lookup key opMap
+
+op :: Parser BinOp
+op = try (
+  do whitespace
+     o <- operator
+     whitespace
+     case (opLookup o) of
+       Nothing -> unexpected "operator"
+       Just op -> return op)
+
+alphaBinary s t assoc = Ex.Infix (reservedOp s >> return (Op t)) assoc
+
+alphaOp :: Parser BinOp
+alphaOp = do
   whitespace
-  o <- operator
+  o <- op
   whitespace
   return o
 
 binops = [[binary "<-" Arrow Ex.AssocLeft]
-        ,[alfaBinary "mod" Mod Ex.AssocLeft]
+        ,[alphaBinary "mod" Mod Ex.AssocLeft]
         ,[binary "*" Times Ex.AssocLeft,
           binary "/" Divide Ex.AssocLeft]
         ,[binary "+" Plus Ex.AssocLeft,
@@ -60,13 +86,13 @@ false :: Parser Bool
 false = do reserved "false"
            return False
 
-number :: Parser Number
+number :: Parser Datum
 number = try (do {i <- integer; return (Integer i)})
       <|> try (do {f <- float; return (Float f)})
       <|> do {h <- hexadecimal; return (Hexa h)}
 
 datum :: Parser Datum
-datum = do {n <- number; return (Number n)}
+datum = try (do {n <- number; return n})
      <|> try (do {t <- true; return (Bool t)})
      <|> try (do {f <- false; return (Bool f)})
      <|> do {s <- Lexer.string; return (String s)}
@@ -84,14 +110,14 @@ typedec = do reserved "int"
        <|> do reserved "float"
               return FloatType
 
-factor :: Parser Factor
+factor :: Parser Term
 factor = do {d <- datum; return (Datum d)}
        <|> do {id <- identifier; return(Id id)}
-       <|> do {e <- expr; return (Expr e)}
+--       <|> do {e <- expr; return (Expr e)}
 
 term :: Parser Term
-term = do {f <- factor; return (Term f)}
-    <|> Ex.buildExpressionParser (unops ++ binops) term
+term = Ex.buildExpressionParser (unops ++ binops ++ [[binop]]) factor
+    <|> do {f <- factor; return f}
 
 -- expr :: Parser Expr
 -- expr =  Ex.buildExpressionParser (unops ++ binops) factor
@@ -111,7 +137,7 @@ expr :: Parser Expr
 expr = do {t <- term; return (TermExpr t)}
     <|> call
 --    <|> lambda
-    <|> vectorGet
+--    <|> vectorGet
 
 -- lambda :: Parser Expr
 -- lambda = do paramsret <- brackets
@@ -267,8 +293,7 @@ decr = do reserved "decr"
           return $ Decr id
 
 statement :: Parser Statement
-statement = assign
-         <|> ifst
+statement =  ifst
          <|> match
          <|> foreach
          <|> try repeatU
@@ -276,7 +301,8 @@ statement = assign
          <|> retst
          <|> incr
          <|> decr
---         <|> do {e <- expr; return (Statement e)}
+         <|> assign
+         <|> do {e <- expr; dot; return (Statement e)}
 
 block :: Parser Block
 block = do decs <- many declaration
@@ -286,7 +312,6 @@ block = do decs <- many declaration
 contents :: Parser a -> Parser a
 contents p = do
   Tok.whiteSpace lexer
-  lift $ return $ print "contents"
   r <- p
   eof
   return r
