@@ -2,81 +2,19 @@ module Parser where
 
 import Text.Parsec
 import Text.Parsec.String (Parser)
-import Control.Applicative ((<$>))
 
 import Control.Monad.Trans
 import System.Console.Haskeline
 
 import qualified Text.Parsec.Expr as Ex
 import qualified Text.Parsec.Token as Tok
-import qualified Data.Map as M
 
 import Lexer
 import Syntax
+import Operators
 
-binop = Ex.Infix (Op <$> op) Ex.AssocLeft
--- unop = Ex.Prefix (UnOp <$> op)
-
-binary s t assoc = Ex.Infix (reservedOp s >> return (Op t)) assoc
-unary s t = Ex.Prefix (reservedOp s >> return (UnOp t))
-comp s t = Ex.Infix (reservedOp s >> return (CondOp t)) Ex.AssocNone
-
-opMap = M.fromList [("+",   Plus)
-                   ,("*",   Times)
-                   ,("-",   BinMinus)
-                   ,("mod", Mod)
-                   ,("/",   Divide)
-                   ,("<-",  Arrow)]
-
-compMap = M.fromList [("<",   Lt)
-                     ,(">",   Gt)
-                     ,("<=",  Leq)
-                     ,(">=",  Geq)
-                     ,("=",   Eq)
-                     ,("eq",  Eq)
-                     ,("neq", Neq)
-                     ,("or",  Or)
-                     ,("and", And)]
-
-opLookup key = M.lookup key opMap
-
-op :: Parser BinOp
-op = try (
-  do whitespace
-     o <- operator
-     whitespace
-     case (opLookup o) of
-       Nothing -> unexpected "operator"
-       Just op -> return op)
-
-alphaBinary s t assoc = Ex.Infix (reservedOp s >> return (Op t)) assoc
-
-alphaOp :: Parser BinOp
-alphaOp = do
-  whitespace
-  o <- op
-  whitespace
-  return o
-
-binops = [[binary "<-" Arrow Ex.AssocLeft]
-        ,[alphaBinary "mod" Mod Ex.AssocLeft]
-        ,[binary "*" Times Ex.AssocLeft,
-          binary "/" Divide Ex.AssocLeft]
-        ,[binary "+" Plus Ex.AssocLeft,
-          binary "-" BinMinus Ex.AssocLeft]]
-
-compops = [[comp "<" Lt,
-             comp ">" Gt,
-             comp "=" Eq,
-             comp "<=" Geq,
-             comp ">=" Leq,
-             comp "eq" Eq,
-             comp "neq" Neq,
-             comp "or" Or,
-             comp "and" And]]
-
-unops = [[unary "-" UnMinus]
-        ,[unary "not" Not]]
+end :: Parser String
+end = do dot
 
 true :: Parser Bool
 true = do reserved "true"
@@ -87,8 +25,8 @@ false = do reserved "false"
            return False
 
 number :: Parser Datum
-number = try (do {i <- integer; return (Integer i)})
-      <|> try (do {f <- float; return (Float f)})
+number = try (do {f <- float; return (Float f)})
+      <|> try (do {i <- integer; return (Integer i)})
       <|> do {h <- hexadecimal; return (Hexa h)}
 
 datum :: Parser Datum
@@ -116,14 +54,11 @@ factor = do {d <- datum; return (Datum d)}
 --       <|> do {e <- expr; return (Expr e)}
 
 term :: Parser Term
-term = Ex.buildExpressionParser (unops ++ binops ++ [[binop]]) factor
+term = Ex.buildExpressionParser (unops ++ binops ++ [[unop],[binop]]) factor
     <|> do {f <- factor; return f}
 
--- expr :: Parser Expr
--- expr =  Ex.buildExpressionParser (unops ++ binops) factor
-
 callParams :: Parser CallParams
-callParams = many $ do whitespace
+callParams = many $ do space
                        t <- term
                        return t
 
@@ -185,11 +120,11 @@ function = do reserved "dec"
               ret <- typedec
               reserved "->"
               body <- many $ statement
-              dot
+              end
               return $ DecFun name args ret (Block [] body)
 
 condition :: Parser Expr
-condition = Ex.buildExpressionParser (compops) condition
+condition = Ex.buildExpressionParser (compops ++ [[compop]]) condition
 
 
 ifthenelse :: Parser Statement
@@ -200,7 +135,7 @@ ifthenelse = do
   th <- many statement
   reserved "else"
   el <- many statement
-  dot
+  end
   return $ If cond th el
 
 ifthen :: Parser Statement
@@ -209,7 +144,7 @@ ifthen = do
   cond <- condition
   comma
   th <- many statement
-  dot
+  end
   return $ If cond th []
 
 ifst :: Parser Statement
@@ -222,14 +157,14 @@ foreach = do
   reserved "in"
   iterator <- identifier
   body <- many statement
-  dot
+  end
   return $ Foreach var iterator body
 
 assign :: Parser Statement
 assign = do name <- identifier
             reservedOp "<-"
             exp <- expr
-            dot
+            end
             return $ Assign name exp
 
 clause :: Parser Clause
@@ -252,7 +187,7 @@ match = do reserved "match"
            def <- case def of
              Clause [] [] -> return []
              _ -> return [def]
-           dot
+           end
            return $ Match key (clauses ++ def)
 
 repeatU :: Parser Statement
@@ -260,7 +195,7 @@ repeatU = do reserved "repeat"
              body <- many statement
              reserved "until"
              cond <- condition
-             dot
+             end
              return $ RepeatU body cond
 
 repeatT :: Parser Statement
@@ -271,25 +206,25 @@ repeatT = do reserved "repeat"
                     <|> do i <- identifier
                            return (Left i))
              reserved "times"
-             dot
+             end
              return $ RepeatT body id
 
 retst :: Parser Statement
 retst = do reserved "return"
            exp <- expr
-           dot
+           end
            return $ Return exp
 
 incr :: Parser Statement
 incr = do reserved "incr"
           id <- identifier
-          dot
+          end
           return $ Incr id
 
 decr :: Parser Statement
 decr = do reserved "decr"
           id <- identifier
-          dot
+          end
           return $ Decr id
 
 statement :: Parser Statement
@@ -302,7 +237,7 @@ statement =  ifst
          <|> incr
          <|> decr
          <|> assign
-         <|> do {e <- expr; dot; return (Statement e)}
+         <|> do {e <- expr; end; return (Statement e)}
 
 block :: Parser Block
 block = do decs <- many declaration
