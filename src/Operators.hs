@@ -12,10 +12,7 @@ import qualified Data.Map as M
 binop = Ex.Infix (Op <$> op) Ex.AssocLeft
 unop = Ex.Prefix (UnOp <$> uop)
 compop = Ex.Infix (CondOp <$> cop) Ex.AssocLeft
-
-binary s t assoc = Ex.Infix (reservedOp s >> return (Op t)) assoc
-unary s t = Ex.Prefix (reservedOp s >> return (UnOp t))
-comp s t = Ex.Infix (reservedOp s >> return (CondOp t)) Ex.AssocNone
+vectop = Ex.Infix (VectOp <$> vop) Ex.AssocLeft
 
 opMap = M.fromList [("+",   Plus)
                    ,("*",   Times)
@@ -67,7 +64,20 @@ cop = try (
        Nothing -> unexpected "operator"
        Just op -> return op)
 
+vop :: Parser BinOp
+vop = try (
+  do whitespace
+     o <- operator
+     whitespace
+     case o of
+       "\'" -> return Get
+       _ -> unexpected "operator")
+
 alphaBinary s t assoc = Ex.Infix (reservedOp s >> return (Op t)) assoc
+binary s t assoc = Ex.Infix (reservedOp s >> return (Op t)) assoc
+unary s t = Ex.Prefix (reservedOp s >> return (UnOp t))
+comp s t = Ex.Infix (reservedOp s >> return (CondOp t)) Ex.AssocNone
+vect s t assoc = Ex.Infix (reservedOp s >> return (VectOp t)) assoc
 
 binops = [[alphaBinary "mod" Mod Ex.AssocLeft]
         ,[binary "*" Times Ex.AssocLeft,
@@ -87,3 +97,5 @@ compops = [[comp "<" Lt,
 
 unops = [[unary "-" UnMinus]
         ,[unary "not" Not]]
+
+vectops = [[vect "'" Get Ex.AssocLeft]]

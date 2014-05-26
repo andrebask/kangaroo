@@ -49,14 +49,13 @@ typedec = do reserved "int"
               return FloatType
 
 factor :: Parser Expr
-factor = call
+factor =  try call
       <|> do {d <- datum; return (Datum d)}
       <|> do {id <- identifier; return(Id id)}
 --    <|> lambda
---      <|> vectorGet
 
 expr :: Parser Expr
-expr = Ex.buildExpressionParser (unops ++ binops ++ [[unop],[binop]]) factor
+expr = Ex.buildExpressionParser (unops ++ binops ++ vectops ++ [[unop],[binop],[vectop]]) factor
     <|> do {f <- factor; return f}
 
 callParams :: Parser CallParams
@@ -65,7 +64,7 @@ callParams = many (whitespace >> expr)
 call :: Parser Expr
 call = do
   name <- identifier
---  colon
+  colon
   args <- callParams
   return $ FunCall name args
 
@@ -78,11 +77,11 @@ call = do
 --                             (typedec ret)
 --                             body
 
-vectorGet :: Parser Expr
-vectorGet = do name <- identifier
-               reservedOp "'"
-               index <- integer
-               return $ Get name index
+-- vectorGet :: Parser Expr
+-- vectorGet = do vect <- expr
+--                char '\\'
+--                index <- expr
+--                return $ VectOp Get vect index
 
 declaration :: Parser Declaration
 declaration = try $ do name <- identifier

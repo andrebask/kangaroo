@@ -12,7 +12,7 @@ data BinOp
   | Times
   | Divide
   | Mod
-  | Arrow
+  | Get
   | CompareOp
   deriving (Eq, Ord, Show)
 
@@ -64,7 +64,7 @@ data Expr
   | Datum Datum
   | FunCall Identifier CallParams
   | Lambda DecParams Type Block
-  | Get Identifier Index
+  | VectOp BinOp Expr Expr
   | Parenthesized Expr
   | UnOp UnaryOp Expr
   | Op BinOp Expr Expr
