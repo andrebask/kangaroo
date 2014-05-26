@@ -59,16 +59,19 @@ data Type
   | VectType Size Type
   deriving (Eq, Ord, Show)
 
-data Term
+data Expr
   = Id Identifier
   | Datum Datum
-  | Expr Expr
+  | FunCall Identifier CallParams
+  | Lambda DecParams Type Block
+  | Get Identifier Index
   | Parenthesized Expr
-  | UnOp UnaryOp Term
-  | Op BinOp Term Term
+  | UnOp UnaryOp Expr
+  | Op BinOp Expr Expr
+  | CondOp CompareOp Expr Expr
   deriving (Eq, Ord, Show)
 
-type CallParams =  [Term]
+type CallParams =  [Expr]
 
 data DecParam =  DecParam Type Identifier
   deriving (Eq, Ord, Show)
@@ -76,14 +79,6 @@ data DecParam =  DecParam Type Identifier
 type DecParams =  [DecParam]
 
 type Index = Integer
-
-data Expr
-  = TermExpr Term
-  | CondOp CompareOp Expr Expr
-  | FunCall Identifier CallParams
-  | Lambda DecParams Type Block
-  | Get Identifier Index
-  deriving (Eq, Ord, Show)
 
 -- type Condition = CondOp CompareOp Expr Expr
 --  deriving (Eq, Ord, Show)

@@ -48,31 +48,26 @@ typedec = do reserved "int"
        <|> do reserved "float"
               return FloatType
 
-factor :: Parser Term
-factor = do {d <- datum; return (Datum d)}
-       <|> do {id <- identifier; return(Id id)}
---       <|> do {e <- expr; return (Expr e)}
+factor :: Parser Expr
+factor = call
+      <|> do {d <- datum; return (Datum d)}
+      <|> do {id <- identifier; return(Id id)}
+--    <|> lambda
+--      <|> vectorGet
 
-term :: Parser Term
-term = Ex.buildExpressionParser (unops ++ binops ++ [[unop],[binop]]) factor
+expr :: Parser Expr
+expr = Ex.buildExpressionParser (unops ++ binops ++ [[unop],[binop]]) factor
     <|> do {f <- factor; return f}
 
 callParams :: Parser CallParams
-callParams = many $ do space
-                       t <- term
-                       return t
+callParams = many (whitespace >> expr)
 
 call :: Parser Expr
 call = do
   name <- identifier
+--  colon
   args <- callParams
   return $ FunCall name args
-
-expr :: Parser Expr
-expr = do {t <- term; return (TermExpr t)}
-    <|> call
---    <|> lambda
---    <|> vectorGet
 
 -- lambda :: Parser Expr
 -- lambda = do paramsret <- brackets
@@ -124,7 +119,7 @@ function = do reserved "dec"
               return $ DecFun name args ret (Block [] body)
 
 condition :: Parser Expr
-condition = Ex.buildExpressionParser (compops ++ [[compop]]) condition
+condition = Ex.buildExpressionParser (compops ++ [[compop]]) factor
 
 
 ifthenelse :: Parser Statement
@@ -236,7 +231,7 @@ statement =  ifst
          <|> retst
          <|> incr
          <|> decr
-         <|> assign
+         <|> try assign
          <|> do {e <- expr; end; return (Statement e)}
 
 block :: Parser Block

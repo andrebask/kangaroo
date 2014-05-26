@@ -21,8 +21,7 @@ opMap = M.fromList [("+",   Plus)
                    ,("*",   Times)
                    ,("-",   BinMinus)
                    ,("mod", Mod)
-                   ,("/",   Divide)
-                   ,("<-",  Arrow)]
+                   ,("/",   Divide)]
 
 unopMap = M.fromList [("not",   Not)
                    ,("-",   UnMinus)]
@@ -70,8 +69,7 @@ cop = try (
 
 alphaBinary s t assoc = Ex.Infix (reservedOp s >> return (Op t)) assoc
 
-binops = [[binary "<-" Arrow Ex.AssocLeft]
-        ,[alphaBinary "mod" Mod Ex.AssocLeft]
+binops = [[alphaBinary "mod" Mod Ex.AssocLeft]
         ,[binary "*" Times Ex.AssocLeft,
           binary "/" Divide Ex.AssocLeft]
         ,[binary "+" Plus Ex.AssocLeft,

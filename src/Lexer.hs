@@ -3,6 +3,7 @@ module Lexer where
 import Text.Parsec.String (Parser)
 import Text.Parsec.Language (emptyDef)
 import Text.Parsec.Combinator (sepBy)
+import Text.Parsec.Char (space)
 
 import qualified Text.Parsec.Token as Tok
 
@@ -58,6 +59,9 @@ commaSep1 = Tok.commaSep1 lexer
 
 colonSep :: Parser a -> Parser [a]
 colonSep p = sepBy p colon
+
+spaceSep :: Parser a -> Parser [a]
+spaceSep p = sepBy p space
 
 comma :: Parser String
 comma = Tok.comma lexer
