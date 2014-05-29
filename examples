@@ -1,6 +1,19 @@
 # if
 if expr, expr. else if expr., expr.. else expr. .
 
+if x > 2,
+	incr x.
+	return 1.
+else if x < 1,
+	decr x.
+	return 1.
+else if x eq 1,
+	decr z.
+	return 1.
+else
+	return 0.
+.
+
 #func definition
 dec sum int x, int y : int -> return x + y..
 
@@ -27,10 +40,10 @@ match key:
 
 # loop
 repeat
-	decr x.	
+	decr x.
 until x<5.
 
-repeat 
+repeat
 	decr x.
 for 6 times.
 
@@ -41,7 +54,7 @@ foreach t in array t <- 0..
 type Animal:
 	property color is int.
 	property weight is float.
-	
+
 	operation eat int x: int ->
 		weight <- weight + x.
 		return weight.
@@ -73,9 +86,3 @@ dec main ->
 .
 
 main.
-	
-
-
-		
-	 
-
