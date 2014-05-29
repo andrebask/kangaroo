@@ -3,7 +3,8 @@ module Lexer where
 import Text.Parsec.String (Parser)
 import Text.Parsec.Language (emptyDef)
 import Text.Parsec.Combinator (sepBy)
-import Text.Parsec.Char (space)
+import Text.Parsec.Prim ((<|>))
+import Text.Parsec.Char (space, oneOf, alphaNum)
 
 import qualified Text.Parsec.Token as Tok
 
@@ -28,6 +29,7 @@ lexer = Tok.makeTokenParser style
              , Tok.reservedOpNames = ops
              , Tok.reservedNames = names
 	     , Tok.caseSensitive = True
+             , Tok.identLetter	 = alphaNum <|> oneOf "_"
              }
 
 integer :: Parser Integer
