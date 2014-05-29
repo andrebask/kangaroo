@@ -1,3 +1,12 @@
+# if
+if expr, expr. else if expr., expr.. else expr. .
+
+#func definition
+dec sum int x, int y : int -> return x + y..
+
+#fun call should return 5
+sum: 2 3.
+
 # switch
 match key:
    1 2 3,
@@ -18,18 +27,21 @@ match key:
 
 # loop
 repeat
-	decr x.
+	decr x.	
 until x<5.
 
-repeat
+repeat 
 	decr x.
 for 6 times.
+
+#foreach to clear a vector
+foreach t in array t <- 0..
 
 # type system
 type Animal:
 	property color is int.
 	property weight is float.
-
+	
 	operation eat int x: int ->
 		weight <- weight + x.
 		return weight.
@@ -61,3 +73,9 @@ dec main ->
 .
 
 main.
+	
+
+
+		
+	 
+
