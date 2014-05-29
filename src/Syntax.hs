@@ -112,6 +112,7 @@ data Statement
   | Statement Expr
   | Comment
   | Breakpoint
+  | Dec Declaration
   deriving (Eq, Ord, Show)
 
 data DataStruct
@@ -126,7 +127,7 @@ data Property = Property Identifier Type
 data Operation = Operation Identifier DecParams Type Override Block
   deriving (Eq, Ord, Show)
 
-data Block = Block [Declaration] [Statement]
+data Block = Block [Statement]
   deriving (Eq, Ord, Show)
 
 -- instance Show (Statement) where

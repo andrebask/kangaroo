@@ -86,16 +86,18 @@ call = do
 --                return $ VectOp Get vect index
 
 declaration :: Parser Declaration
-declaration = try $ do name <- identifier
-                       reserved "is"
-                       type_ <- typedec
-                       return $ DecVar name type_
+declaration = do try $ do name <- identifier
+                          reserved "is"
+                          type_ <- typedec
+                          end
+                          return $ DecVar name type_
            <|> do name <- identifier
                   reserved "is"
                   reserved "vector"
                   reserved "of"
                   size <- integer
                   type_ <- typedec
+                  end
                   return $ DecVect name size type_
            <|> function
 --   <|> structure --TODO
@@ -117,7 +119,7 @@ function = do reserved "dec"
               reserved "->"
               body <- many $ statement
               end
-              return $ DecFun name args ret (Block [] body)
+              return $ DecFun name args ret (Block body)
 
 condition :: Parser Expr
 condition = Ex.buildExpressionParser (compops ++ [[compop]]) factor
@@ -252,12 +254,13 @@ statement =  ifst
          <|> incr
          <|> decr
          <|> try assign
+         <|> try (do {d <- declaration; return (Dec d)})
          <|> do {e <- expr; end; return (Statement e)}
 
+
 block :: Parser Block
-block = do decs <- many declaration
-           sts <- many statement
-           return $ Block decs sts
+block = do sts <- many statement
+           return $ Block sts
 
 contents :: Parser a -> Parser a
 contents p = do
