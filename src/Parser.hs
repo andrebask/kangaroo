@@ -162,10 +162,12 @@ assign = do name <- identifier
             return $ Assign name exp
 
 clause :: Parser Clause
-clause = do datums <- commaSep1 datum
+clause = do d <- datum
+            whitespace
+            datums <- spaceSep datum
             comma
-            body <- many statement
-            return $ Clause datums body
+            body <- many $ try statement
+            return $ Clause (d:datums) body
 
 defclause :: Parser Clause
 defclause = do comma
@@ -176,7 +178,7 @@ match :: Parser Statement
 match = do reserved "match"
            key <- expr
            colon
-           clauses <- many clause
+           clauses <- many $ clause
            def <- option (Clause [] []) defclause
            def <- case def of
              Clause [] [] -> return []

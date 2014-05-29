@@ -63,7 +63,7 @@ colonSep :: Parser a -> Parser [a]
 colonSep p = sepBy p colon
 
 spaceSep :: Parser a -> Parser [a]
-spaceSep p = sepBy p space
+spaceSep p = sepBy p whitespace
 
 comma :: Parser String
 comma = Tok.comma lexer

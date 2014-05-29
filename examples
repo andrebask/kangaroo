@@ -1,8 +1,10 @@
 # switch
 match key:
-   1, x <- x * x.
+   1 2 3,
+      x <- x * x.
       return x.
-   2, y <- y * x.
+   4 5 6,
+      y <- y * x.
       incr y.
       return y.
    , return x.
