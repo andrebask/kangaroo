@@ -122,6 +122,10 @@ function = do reserved "dec"
 condition :: Parser Expr
 condition = Ex.buildExpressionParser (compops ++ [[compop]]) factor
 
+elseBlock :: Parser Body
+elseBlock = do reserved "else"
+               el <- many statement
+               return el
 
 ifthenelse :: Parser Statement
 ifthenelse = do
@@ -129,10 +133,22 @@ ifthenelse = do
   cond <- condition
   comma
   th <- many statement
-  reserved "else"
-  el <- many statement
-  end
-  return $ If cond th el
+  el <- try (do el <- elseBlock
+                end
+                return $ Left $ If cond th el)
+        <|> do eif <- many $ try (do reserved "else"
+                                     reserved "if"
+                                     cond <- condition
+                                     comma
+                                     body <- many statement
+                                     return (cond, body))
+               el <- option [] (do e <- elseBlock
+                                   return [(Datum (Bool True), e)])
+               end
+               return $ Right (eif ++ el)
+  case el of
+    Left x -> return x
+    Right x -> return $ ElseIf cond th x
 
 ifthen :: Parser Statement
 ifthen = do
@@ -144,7 +160,7 @@ ifthen = do
   return $ If cond th []
 
 ifst :: Parser Statement
-ifst = try ifthenelse <|> ifthen
+ifst = try ifthen <|> ifthenelse
 
 foreach :: Parser Statement
 foreach = do

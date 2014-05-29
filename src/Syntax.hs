@@ -1,6 +1,7 @@
 module Syntax where
 
 import qualified Data.Vector as V
+import Data.String.Utils (replace)
 
 type Identifier = String
 
@@ -100,6 +101,7 @@ data Declaration
 data Statement
   = Assign Identifier Expr
   | If Expr Then Else
+  | ElseIf Expr Then [(Expr, Body)]
   | Match Expr [Clause]
   | Foreach Identifier Identifier Body
   | RepeatU Body Expr
@@ -126,3 +128,7 @@ data Operation = Operation Identifier DecParams Type Override Block
 
 data Block = Block [Declaration] [Statement]
   deriving (Eq, Ord, Show)
+
+-- instance Show (Statement) where
+--     show (Statement x) = replace "[" "\n[" $ replace "(" "\n(" $ show x
+--     show x = show x

@@ -19,3 +19,5 @@ executable kangaroo
     , vector
     , parsec
     , containers
+    , MissingH
+	
