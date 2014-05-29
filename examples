@@ -16,18 +16,18 @@ match key:
 
 # loop
 repeat
-	decr x.	
+	decr x.
 until x<5.
 
-repeat 
+repeat
 	decr x.
-6 times.
+for 6 times.
 
 # type system
 type Animal:
 	property color is int.
 	property weight is float.
-	
+
 	operation eat int x: int ->
 		weight <- weight + x.
 		return weight.
@@ -59,9 +59,3 @@ dec main ->
 .
 
 main.
-	
-
-
-		
-	 
-

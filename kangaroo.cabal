@@ -1,4 +1,4 @@
-name:                kangroo
+name:                kangaroo
 version:             0.0.0.1
 Cabal-Version:       >= 1.2
 synopsis:            The Kangaroo Programming Language
@@ -9,9 +9,9 @@ build-type: 	     Simple
 executable kangaroo
   main-is: Main.hs
   Hs-Source-Dirs: src
-  build-depends:       
+  build-depends:
       base                 >= 4.6 && <4.7
-    , haskeline            == 0.7.1.2 
+    , haskeline            == 0.7.1.2
     , llvm-general         == 3.4.1.0
     , llvm-general-pure    == 3.4.1.0
     , mtl

@@ -195,6 +195,7 @@ repeatU = do reserved "repeat"
 repeatT :: Parser Statement
 repeatT = do reserved "repeat"
              body <- many statement
+             reserved "for"
              id <- (do n <- number
                        return (Right n)
                     <|> do i <- identifier

@@ -20,7 +20,7 @@ lexer = Tok.makeTokenParser style
 	     "bool", "else", "vector", "dec", "->",
 	     "foreach", "in", "of", "float",
 	     "repeat", "return", "is", "are", "until",
-             "true", "false"]
+             "true", "false", "for", "times"]
 
     style = emptyDef {
                Tok.commentLine = "#"
