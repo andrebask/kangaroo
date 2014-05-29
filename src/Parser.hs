@@ -52,11 +52,13 @@ factor :: Parser Expr
 factor =  try call
       <|> do {d <- datum; return (Datum d)}
       <|> do {id <- identifier; return(Id id)}
+      <|> parens expr
 --    <|> lambda
 
 expr :: Parser Expr
 expr = Ex.buildExpressionParser (unops ++ binops ++ vectops ++ [[unop],[binop],[vectop]]) factor
     <|> do {f <- factor; return f}
+    <|> parens expr
 
 callParams :: Parser CallParams
 callParams = many (whitespace >> expr)
