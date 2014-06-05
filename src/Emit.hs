@@ -19,29 +19,29 @@ import qualified Data.Map as Map
 import Codegen
 import qualified Syntax as S
 
-toSig :: [String] -> [(AST.Type, AST.Name)]
-toSig = map (\x -> (double, AST.Name x))
+toSig :: [S.DecParam] -> [(AST.Type, AST.Name)]
+toSig = map (\x -> (float, AST.Name x))
 
 codegenTop :: S.Expr -> LLVM ()
 codegenTop (S.Function name args body) = do
-  define double name fnargs bls
+  define float name fnargs bls
   where
     fnargs = toSig args
     bls = createBlocks $ execCodegen $ do
       entry <- addBlock entryBlockName
       setBlock entry
       forM args $ \a -> do
-        var <- alloca double
+        var <- alloca float
         store var (local (AST.Name a))
         assign a var
       cgen body >>= ret
 
 codegenTop (S.Extern name args) = do
-  external double name fnargs
+  external float name fnargs
   where fnargs = toSig args
 
 codegenTop exp = do
-  define double "main" [] blks
+  define float "main" [] blks
   where
     blks = createBlocks $ execCodegen $ do
       entry <- addBlock entryBlockName
@@ -55,34 +55,35 @@ codegenTop exp = do
 lt :: AST.Operand -> AST.Operand -> Codegen AST.Operand
 lt a b = do
   test <- fcmp FP.ULT a b
-  uitofp double test
+  uitofp float test
 
+-- Dict to map binOps with actual llvm routines
 binops = Map.fromList [
-      ("+", fadd)
-    , ("-", fsub)
-    , ("*", fmul)
-    , ("/", fdiv)
-    , ("<", lt)
+      (S.Plus, fadd)
+    , (S.BinMinus, fsub)
+    , (S.Times, fmul)
+    , (S.Divide, fdiv)
   ]
 
 cgen :: S.Expr -> Codegen AST.Operand
-cgen (S.UnaryOp op a) = do
-  cgen $ S.Call ("unary" ++ op) [a]
-cgen (S.BinaryOp "=" (S.Var var) val) = do
+-- This part is for operator overloading
+--cgen (S.UnaryOp op a) = do
+--  cgen $ S.Call ("unary" ++ op) [a]
+cgen (S.Op S.Eq (S.Id var) val) = do
   a <- getvar var
   cval <- cgen val
   store a cval
   return cval
-cgen (S.BinaryOp op a b) = do
+cgen (S.Op op a b) = do
   case Map.lookup op binops of
     Just f  -> do
       ca <- cgen a
       cb <- cgen b
       f ca cb
     Nothing -> error "No such operator"
-cgen (S.Var x) = getvar x >>= load
-cgen (S.Float n) = return $ cons $ C.Float (F.Double n)
-cgen (S.Call fn args) = do
+cgen (S.Id x) = getvar x >>= load
+cgen (S.Float n) = return $ cons $ C.Float (F.Single n)
+cgen (S.FunCall fn args) = do
   largs <- mapM cgen args
   call (externf (AST.Name fn)) largs
 

@@ -10,7 +10,6 @@ import Control.Monad.Trans
 import System.Console.Haskeline
 
 import System.IO
-import System.Enviroment
 import System.Console.Haskeline
 
 import qualified LLVM.General.AST as AST
