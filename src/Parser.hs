@@ -255,7 +255,7 @@ statement =  ifst
          <|> decr
          <|> try assign
          <|> try (do {d <- declaration; return (Dec d)})
-         <|> do {e <- expr; end; return (Statement e)}
+         <|> do {e <- expr; end; return (Expr e)}
 
 
 block :: Parser Block

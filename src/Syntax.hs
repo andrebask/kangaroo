@@ -109,7 +109,7 @@ data Statement
   | Return Expr
   | Incr Identifier
   | Decr Identifier
-  | Statement Expr
+  | Expr Expr
   | Comment
   | Breakpoint
   | Dec Declaration

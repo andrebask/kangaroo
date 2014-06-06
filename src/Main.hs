@@ -11,6 +11,7 @@ import System.Console.Haskeline
 
 import System.IO
 import System.Console.Haskeline
+import System.Environment (getArgs)
 
 import qualified LLVM.General.AST as AST
 
