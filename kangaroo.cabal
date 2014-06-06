@@ -5,8 +5,11 @@ synopsis:            The Kangaroo Programming Language
 description:         Kangaroo implementation
 homepage:            https://github.com/andrebask/kangaroo
 build-type: 	     Simple
+default-language:    Haskell2010
 
 executable kangaroo
+--  C-sources: includes/C/cbits.c
+--  CC-Options: -fPIC -shared
   main-is: Main.hs
   Hs-Source-Dirs: src
   build-depends:
