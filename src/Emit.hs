@@ -2,7 +2,7 @@
 
 module Emit where
 
-import GHC.Float (double2Float)
+import GHC.Float (double2Float, int2Float)
 
 import LLVM.General.Module
 import LLVM.General.Context
@@ -22,23 +22,35 @@ import Codegen
 import JIT
 import qualified Syntax as S
 
---toSig :: [S.DecParam] -> [(AST.Type, AST.Name)]
---toSig = map (\x -> (float, AST.Name x))
+types = Map.fromList [
+      (S.IntType, integer)
+    , (S.FloatType, float)
+  ]
+
+toLLVMType :: S.Type -> AST.Type
+toLLVMType st = case Map.lookup st types of
+                 Nothing -> float
+                 Just t -> t
+
+toSig :: [S.DecParam] -> [(AST.Type, AST.Name)]
+toSig = map (\(S.DecParam ptype id) -> (toLLVMType ptype, AST.Name id))
 
 codegenTop :: S.Statement -> LLVM ()
---codegenTop (S.Function name args body) = do
---  define float name fnargs bls
---  where
---    fnargs = toSig args
---    bls = createBlocks $ execCodegen $ do
---      entry <- addBlock entryBlockName
---      setBlock entry
---      forM args $ \a -> do
---        var <- alloca float
---        store var (local (AST.Name a))
---       assign a var
---      cgen body >>= ret
---
+codegenTop (S.Dec (S.DecFun name args rty body)) = do
+  define (toLLVMType rty) name fnargs bls
+  where
+    fnargs = toSig args
+    bls = createBlocks $ execCodegen $ do
+      entry <- addBlock entryBlockName
+      setBlock entry
+      forM args $ \(S.DecParam ptype id) -> do
+        var <- alloca $ toLLVMType ptype
+        store var (local (AST.Name id))
+        assign id var
+      let (S.Block sts) = body
+        in forM (init sts) cgen >>
+           cgen (last sts) >>= ret
+
 --codegenTop (S.Extern name args) = do
 --  external float name fnargs
 --  where fnargs = toSig args
@@ -50,6 +62,8 @@ codegenTop exp = do
       entry <- addBlock entryBlockName
       setBlock entry
       cgen exp >>= ret
+
+--codegenTop s = do error $ "Invalid toplevel operation."
 
 -------------------------------------------------------------------------------
 -- Operations
@@ -68,15 +82,21 @@ binops = Map.fromList [
     , (S.Divide, fdiv)
   ]
 
+resolveType :: S.Datum -> C.Constant
+resolveType (S.Float n) = C.Float (F.Single $ double2Float n)
+-- resolveType (S.Integer n) = C.Int 32 n
+resolveType (S.Integer n) = C.Float (F.Single $ int2Float $ fromIntegral n)
+-- Other types can beadded here
+
 cgen :: S.Statement -> Codegen AST.Operand
 -- This part is for operator overloading
 --cgen (S.UnaryOp op a) = do
 --  cgen $ S.Call ("unary" ++ op) [a]
---cgen (S.Op S.Eq (S.Id var) val) = do
---  a <- getvar var
---  cval <- cgen val
---  store a cval
---  return cval
+cgen (S.Assign var val) = do
+  a <- getvar var
+  cval <- cgen (S.Expr val)
+  store a cval
+  return cval
 cgen (S.Expr (S.Op op a b)) = do
   case Map.lookup op binops of
     Just f  -> do
@@ -85,11 +105,11 @@ cgen (S.Expr (S.Op op a b)) = do
       f ca cb
     Nothing -> error "No such operator"
 cgen (S.Expr (S.Id x)) = getvar x >>= load
-cgen (S.Expr (S.Datum (S.Float n))) = return $ cons $ C.Float (F.Single $ double2Float n)
---cgen (S.FunCall fn args) = do
---  largs <- mapM cgen args
---  call (externf (AST.Name fn)) largs
-cgen x = do error $ "fottiti!!!" ++ show x
+cgen (S.Expr (S.Datum d)) = return $ cons $ resolveType d
+cgen (S.Expr (S.FunCall fn args)) = do
+  largs <- mapM cgen [S.Expr a | a <- args]
+  call (externf (AST.Name fn)) largs
+cgen x = do error $ "fottiti!!! " ++ show x
 
 -------------------------------------------------------------------------------
 -- Compilation

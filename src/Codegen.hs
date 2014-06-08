@@ -67,7 +67,7 @@ float = FloatingPointType 32 IEEE
 
 -- Integer
 integer :: Type
-integer = IntegerType 32 IEEE
+integer = IntegerType 32
 
 -------------------------------------------------------------------------------
 -- Names

@@ -1,5 +1,5 @@
 CC = gcc
-OPTS = -no-user-package-db -package-db .cabal-sandbox/*-packages.conf.d
+OPTS = -no-user-package-db -package-db cabal-dev/packages-*.conf
 
 all:
 	$(CC) -fPIC -shared includes/C/cbits.c -o dist/build/kangaroo/cbits.so
