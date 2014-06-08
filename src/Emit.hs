@@ -55,6 +55,7 @@ codegenTop (S.Dec (S.DecFun name args rty body)) = do
 --  external float name fnargs
 --  where fnargs = toSig args
 --
+
 codegenTop exp = do
   define float "main" [] blks
   where
@@ -88,10 +89,19 @@ resolveType (S.Float n) = C.Float (F.Single $ double2Float n)
 resolveType (S.Integer n) = C.Float (F.Single $ int2Float $ fromIntegral n)
 -- Other types can beadded here
 
+zero :: C.Constant
+zero = C.Float (F.Single 0.0)
+
 cgen :: S.Statement -> Codegen AST.Operand
 -- This part is for operator overloading
 --cgen (S.UnaryOp op a) = do
 --  cgen $ S.Call ("unary" ++ op) [a]
+cgen (S.Dec (S.DecVar id t)) = do
+  i <- alloca $ toLLVMType t
+  zval <- return $ cons zero
+  store i zval
+  assign id i
+  return zval
 cgen (S.Assign var val) = do
   a <- getvar var
   cval <- cgen (S.Expr val)
