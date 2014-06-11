@@ -128,7 +128,7 @@ cgen (S.Expr (S.Datum d)) = return $ cons $ resolveType d
 cgen (S.Expr (S.FunCall fn args)) = do
   largs <- mapM cgen [S.Expr a | a <- args]
   call (externf (AST.Name fn)) largs
-cgen x = do error $ "fottiti!!! " ++ show x
+cgen x = do error $ "Boom!!! " ++ show x
 
 -------------------------------------------------------------------------------
 -- Compilation
