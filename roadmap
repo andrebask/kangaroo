@@ -1,0 +1,30 @@
+## KANGAROO ROADMAP (Kangaroos actually rock)
+
+# FIRST  MAIN TARGET --> The planet of Kangaroos 
+# SECOND MAIN TARGET --> Let kangaroos have lot of $$$ in the marsupium
+# THIRD  MAIN TARGET --> Let kangaroos copulate a lot
+
+
+-----------------------------------------------------------------------
+
+# Philosofy
+- LLVM
+- Calling convention
+- Data structure e type system
+- built-in Maybe
+- exceptions
+- first class functions
+
+
+# Middle terms missions 
+1 - incr e decr  
+2 - conditionals
+3 - loops
+7 - implemented support for all built-in types (vectors)
+8 - return 
+9 - import/export (of goodies)
+5 - java calling convention
+4 - output executable
+* - test cases
+6 - interpreter improvements
+
