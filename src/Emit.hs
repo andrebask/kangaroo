@@ -35,6 +35,15 @@ toLLVMType st = case Map.lookup st types of
 toSig :: [S.DecParam] -> [(AST.Type, AST.Name)]
 toSig = map (\(S.DecParam ptype id) -> (toLLVMType ptype, AST.Name id))
 
+codegenMain :: S.Statement -> LLVM ()
+codegenMain exp = do
+  define float "main" [] blks
+  where
+    blks = createBlocks $ execCodegen $ do
+      entry <- addBlock entryBlockName
+      setBlock entry
+      cgen exp >>= ret
+
 codegenTop :: S.Statement -> LLVM ()
 codegenTop (S.Dec (S.DecFun name args rty body)) = do
   define (toLLVMType rty) name fnargs bls
@@ -57,7 +66,7 @@ codegenTop (S.Dec (S.DecFun name args rty body)) = do
 --
 
 codegenTop exp = do
-  define float "main" [] blks
+  define float "exp" [] blks
   where
     blks = createBlocks $ execCodegen $ do
       entry <- addBlock entryBlockName
@@ -128,6 +137,9 @@ cgen x = do error $ "fottiti!!! " ++ show x
 --liftError :: ErrorT String IO a -> IO a
 --liftError = runErrorT >=> either fail return
 
+safeInit [] = []
+safeInit list = init list
+
 codegen :: AST.Module -> [S.Statement] -> IO AST.Module
 --codegen :: AST.Module -> [S.Expr] -> IO AST.Module
 codegen mod fns = do
@@ -136,8 +148,15 @@ codegen mod fns = do
     Right newast -> return newast
     Left err     -> putStrLn err >> return oldast
   where
-    modn    = mapM codegenTop fns
-    oldast  = runLLVM mod modn
+    modn    = do x <- mapM codegenTop $ safeInit fns
+                 m <- mapM codegenMain $ [last fns]
+                 return $ x ++ m
+    defsOld = AST.moduleDefinitions mod
+    mnew = AST.Module { AST.moduleName = AST.moduleName mod
+                      , AST.moduleDataLayout = AST.moduleDataLayout mod
+                      , AST.moduleTargetTriple = AST.moduleTargetTriple mod
+                      , AST.moduleDefinitions = safeInit defsOld}
+    oldast  = runLLVM mnew modn
 --codegen mod fns = withContext $ \context ->
 --  liftError $ withModuleFromAST context newast $ \m -> do
 --    llstr <- moduleLLVMAssembly m
