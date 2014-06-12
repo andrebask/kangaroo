@@ -1,0 +1,11 @@
+a, b are int.
+c is char.
+
+dec square int x: int ->
+    return x * x.
+.
+
+dec main ->
+    square 2.
+.
+        
