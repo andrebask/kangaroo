@@ -244,6 +244,12 @@ fdiv a b = instr $ FDiv a b []
 fcmp :: FP.FloatingPointPredicate -> Operand -> Operand -> Codegen Operand
 fcmp cond a b = instr $ FCmp cond a b []
 
+cand :: Operand -> Operand -> Codegen Operand
+cand a b = instr $ And a b []
+
+cor :: Operand -> Operand -> Codegen Operand
+cor a b = instr $ Or a b []
+
 cons :: C.Constant -> Operand
 cons = ConstantOperand
 
@@ -272,6 +278,9 @@ br val = terminator $ Do $ Br val []
 
 cbr :: Operand -> Name -> Name -> Codegen (Named Terminator)
 cbr cond tr fl = terminator $ Do $ CondBr cond tr fl []
+
+phi :: Type -> [(Operand, Name)] -> Codegen Operand
+phi ty incoming = instr $ Phi ty incoming []
 
 ret :: Operand -> Codegen (Named Terminator)
 ret val = terminator $ Do $ Ret (Just val) []

@@ -35,14 +35,19 @@ toLLVMType st = case Map.lookup st types of
 toSig :: [S.DecParam] -> [(AST.Type, AST.Name)]
 toSig = map (\(S.DecParam ptype id) -> (toLLVMType ptype, AST.Name id))
 
+
+blks expr = createBlocks $ execCodegen $ do
+  entry <- addBlock entryBlockName
+  setBlock entry
+  cgen expr >>= ret
+
 codegenMain :: S.Statement -> LLVM ()
+codegenMain exp@(S.Dec (S.DecFun name _ _ _)) = do
+  codegenTop exp
+  define float "main" [] (blks (S.Expr (S.Datum (S.Integer 0))))
 codegenMain exp = do
-  define float "main" [] blks
-  where
-    blks = createBlocks $ execCodegen $ do
-      entry <- addBlock entryBlockName
-      setBlock entry
-      cgen exp >>= ret
+  define float "last" [] (blks exp)
+  define float "main" [] (blks (S.Expr (S.FunCall "last" [])))
 
 codegenTop :: S.Statement -> LLVM ()
 codegenTop (S.Dec (S.DecFun name args rty body)) = do
@@ -92,14 +97,28 @@ binops = Map.fromList [
     , (S.Divide, fdiv)
   ]
 
+condops = Map.fromList [
+      (S.Gt, fcmp FP.OGT)
+    , (S.Lt, fcmp FP.OLT)
+    , (S.Geq, fcmp FP.OGE)
+    , (S.Leq, fcmp FP.OLE)
+    , (S.Eq, fcmp FP.OEQ)
+    , (S.Neq, fcmp FP.ONE)
+    , (S.And, cand)
+    , (S.Or, cor)
+  ]
+
 resolveType :: S.Datum -> C.Constant
 resolveType (S.Float n) = C.Float (F.Single $ double2Float n)
 -- resolveType (S.Integer n) = C.Int 32 n
 resolveType (S.Integer n) = C.Float (F.Single $ int2Float $ fromIntegral n)
 -- Other types can beadded here
 
-zero :: C.Constant
-zero = C.Float (F.Single 0.0)
+zero :: AST.Operand
+zero = cons $ C.Float (F.Single 0.0)
+
+one :: AST.Operand
+one = cons $ C.Float (F.Single 1.0)
 
 cgen :: S.Statement -> Codegen AST.Operand
 -- This part is for operator overloading
@@ -107,7 +126,7 @@ cgen :: S.Statement -> Codegen AST.Operand
 --  cgen $ S.Call ("unary" ++ op) [a]
 cgen (S.Dec (S.DecVar id t)) = do
   i <- alloca $ toLLVMType t
-  zval <- return $ cons zero
+  zval <- return zero
   store i zval
   assign id i
   return zval
@@ -123,11 +142,49 @@ cgen (S.Expr (S.Op op a b)) = do
       cb <- cgen (S.Expr b)
       f ca cb
     Nothing -> error "No such operator"
+cgen (S.Expr (S.CondOp op a b)) = do
+  case Map.lookup op condops of
+    Just f  -> do
+      ca <- cgen (S.Expr a)
+      cb <- cgen (S.Expr b)
+      f ca cb
+    Nothing -> error "No such comparison operator"
 cgen (S.Expr (S.Id x)) = getvar x >>= load
 cgen (S.Expr (S.Datum d)) = return $ cons $ resolveType d
 cgen (S.Expr (S.FunCall fn args)) = do
   largs <- mapM cgen [S.Expr a | a <- args]
   call (externf (AST.Name fn)) largs
+cgen (S.If cond thenSts elseSts) = do
+  ifthen <- addBlock "if.then"
+  ifelse <- addBlock "if.else"
+  ifexit <- addBlock "if.exit"
+
+  -- %entry
+  ------------------
+  cond <- cgen (S.Expr cond)
+  test <- fcmp FP.ONE zero cond
+  cbr test ifthen ifelse -- Branch based on the condition
+
+  -- if.then
+  ------------------
+  setBlock ifthen
+  trval <- forM (init thenSts) cgen >> -- Generate code for the true branch
+           cgen (last thenSts)
+  br ifexit                            -- Branch to the merge block
+  ifthen <- getBlock
+
+  -- if.else
+  ------------------
+  setBlock ifelse
+  flval <- forM (init elseSts) cgen >>
+           cgen (last elseSts)         -- Generate code for the false branch
+  br ifexit              -- Branch to the merge block
+  ifelse <- getBlock
+
+  -- if.exit
+  ------------------
+  setBlock ifexit
+  phi float [(trval, ifthen), (flval, ifelse)]
 cgen x = do error $ "Boom!!! " ++ show x
 
 -------------------------------------------------------------------------------
@@ -148,9 +205,12 @@ codegen mod fns = do
     Right newast -> return newast
     Left err     -> putStrLn err >> return oldast
   where
-    modn    = do x <- mapM codegenTop $ safeInit fns
-                 m <- mapM codegenMain $ [last fns]
-                 return $ x ++ m
+    modn    = case fns of
+                 [] -> mapM codegenMain $ []
+                 (f:[]) -> mapM codegenMain $ [f]
+                 (f:fs) -> do x <- mapM codegenTop $ safeInit fns
+                              m <- mapM codegenMain $ [last fns]
+                              return $ x ++ m
     defsOld = AST.moduleDefinitions mod
     mnew = AST.Module { AST.moduleName = AST.moduleName mod
                       , AST.moduleDataLayout = AST.moduleDataLayout mod
