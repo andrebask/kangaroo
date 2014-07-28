@@ -18,14 +18,17 @@
 
 # Middle terms missions 
 
+### basic features
 - incr e decr  
 - conditionals
 - loops 
 
+### tools
 - interpreter improvements
 - output executable
 - test cases
 
+### type system
 - lambda/closures
 - implemented support for all built-in types (vectors)
 - support for user-defined types
@@ -34,14 +37,14 @@
 - modules (import/export)
 - type checking/inference
 - generics
+
+### advanced features
 - garbage collection
 - breakpoint (debugging features)
 - exceptions (as library)
 
------------------
-
 - Web framework
 
------------------
+### others
 
 - Eclipse Plugin
