@@ -2,16 +2,16 @@
 if expr, expr. else if expr., expr.. else expr. .
 
 if x > 2,
-	incr x.
-	return 1.
+    incr x.
+    return 1.
 else if x < 1,
-	decr x.
-	return 1.
+    decr x.
+    return 1.
 else if x eq 1,
-	decr z.
-	return 1.
+    decr z.
+    return 1.
 else
-	return 0.
+    return 0.
 .
 
 #func definition
@@ -34,17 +34,17 @@ match key:
 
 # lambda
 [int x, int y: int] ->
-	x <- x * y.
-	return x.
+    x <- x * y.
+    return x.
 .
 
 # loop
 repeat
-	decr x.
+    decr x.
 until x<5.
 
 repeat
-	decr x.
+    decr x.
 for 6 times.
 
 #foreach to clear a vector
@@ -52,21 +52,21 @@ foreach t in array t <- 0..
 
 # type system
 type Animal:
-	property color is int.
-	property weight is float.
+    property color is int.
+    property weight is float.
 
-	operation eat int x: int ->
-		weight <- weight + x.
-		return weight.
-	.
+    operation eat int x: int ->
+        weight <- weight + x.
+        return weight.
+    .
 .
 
 type Dog is Animal:
 
-	override eat int x: int ->
-		weight <- (weight + x) * 2.
-		return weight.
-	.
+    override eat int x: int ->
+        weight <- (weight + x) * 2.
+        return weight.
+    .
 .
 
 #breakpoint
