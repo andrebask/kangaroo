@@ -12,19 +12,36 @@
 - Calling convention
 - Data structure e type system
 - built-in Maybe
-- exceptions
+- exceptions (as library)
 - first class functions
 
 
 # Middle terms missions 
-1 - incr e decr  
-2 - conditionals
-3 - loops
-7 - implemented support for all built-in types (vectors)
-8 - return 
-9 - import/export (of goodies)
-5 - java calling convention
-4 - output executable
-* - test cases
-6 - interpreter improvements
 
+- incr e decr  
+- conditionals
+- loops 
+
+- interpreter improvements
+- output executable
+- test cases
+
+- lambda/closures
+- implemented support for all built-in types (vectors)
+- support for user-defined types
+- built-in Maybe
+- return 
+- modules (import/export)
+- type checking/inference
+- generics
+- garbage collection
+- breakpoint (debugging features)
+- exceptions (as library)
+
+-----------------
+
+- Web framework
+
+-----------------
+
+- Eclipse Plugin
