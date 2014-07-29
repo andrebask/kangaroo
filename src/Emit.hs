@@ -11,6 +11,7 @@ import qualified LLVM.General.AST as AST
 import qualified LLVM.General.AST.Constant as C
 import qualified LLVM.General.AST.Float as F
 import qualified LLVM.General.AST.FloatingPointPredicate as FP
+import qualified LLVM.General.AST.Type as T
 
 import Data.Word
 import Data.Int
@@ -112,13 +113,32 @@ resolveType :: S.Datum -> C.Constant
 resolveType (S.Float n) = C.Float (F.Single $ double2Float n)
 -- resolveType (S.Integer n) = C.Int 32 n
 resolveType (S.Integer n) = C.Float (F.Single $ int2Float $ fromIntegral n)
+resolveType (S.Bool True) = C.Int 32 1
+resolveType (S.Bool False) = C.Int 32 0
 -- Other types can beadded here
 
 zero :: AST.Operand
-zero = cons $ C.Float (F.Single 0.0)
+zero = cons $ C.Float (F.Single 0)
 
 one :: AST.Operand
-one = cons $ C.Float (F.Single 1.0)
+one = cons $ C.Float (F.Single 1)
+
+tvoid :: AST.Operand
+tvoid = cons $ C.Undef T.VoidType
+
+-- Utility function to compile ElseIf expr, see also cgen
+convertGen :: [(S.Expr, [S.Statement])] -> Codegen AST.Operand
+convertGen ((elseCond,elseBody):[]) = cgen (S.If elseCond elseBody [])
+convertGen ((elseCond,elseBody):elseIfs) = cgen (S.ElseIf elseCond elseBody elseIfs)
+
+-- Utility function to compile a body, see also cgen
+-- If the body is empt, it compiles to void
+cgenBody :: [S.Statement] -> Codegen AST.Operand
+cgenBody [] = do return tvoid
+cgenBody (s:[]) = cgen s
+cgenBody sts = do forM (init sts) cgen
+                  cgen (last sts)
+
 
 cgen :: S.Statement -> Codegen AST.Operand
 -- This part is for operator overloading
@@ -162,22 +182,48 @@ cgen (S.If cond thenSts elseSts) = do
   -- %entry
   ------------------
   cond <- cgen (S.Expr cond)
-  test <- fcmp FP.ONE zero cond
-  cbr test ifthen ifelse -- Branch based on the condition
+  --test <- fcmp FP.ONE zero cond
+  cbr cond ifthen ifelse -- Branch based on the condition
 
   -- if.then
   ------------------
   setBlock ifthen
-  trval <- forM (init thenSts) cgen >> -- Generate code for the true branch
-           cgen (last thenSts)
+  trval <- cgenBody thenSts
   br ifexit                            -- Branch to the merge block
   ifthen <- getBlock
 
   -- if.else
   ------------------
   setBlock ifelse
-  flval <- forM (init elseSts) cgen >>
-           cgen (last elseSts)         -- Generate code for the false branch
+  flval <- cgenBody elseSts         -- Generate code for the false branch
+  br ifexit              -- Branch to the merge block
+  ifelse <- getBlock
+
+  -- if.exit
+  ------------------
+  setBlock ifexit
+  phi float [(trval, ifthen), (flval, ifelse)]
+cgen (S.ElseIf cond thenSts elseIfs) = do
+  ifthen <- addBlock "if.then"
+  ifelse <- addBlock "if.else"
+  ifexit <- addBlock "if.exit"
+
+  -- %entry
+  ------------------
+  cond <- cgen (S.Expr cond)
+  cbr cond ifthen ifelse -- Branch based on the condition
+
+  -- if.then
+  ------------------
+  setBlock ifthen
+  trval <- cgenBody thenSts -- Generate code for the true branch
+  br ifexit                            -- Branch to the merge block
+  ifthen <- getBlock
+
+  -- if.else
+  ------------------
+  setBlock ifelse
+  flval <- convertGen elseIfs         -- Generate code for the false branch
   br ifexit              -- Branch to the merge block
   ifelse <- getBlock
 
